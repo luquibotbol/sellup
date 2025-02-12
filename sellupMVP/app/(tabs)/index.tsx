@@ -1,74 +1,153 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+// app/index.tsx
+import React from 'react';
+import { View, Text, Image, StyleSheet } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-
-export default function HomeScreen() {
+export default function HomePage() {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12'
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      {/* Top rectangle (header background) */}
+      <View style={styles.topRectangle} />
+
+      {/* Header screenshot image */}
+      <Image
+        source={require('../../assets/images/logo.png')} // update the asset path accordingly
+        style={styles.screenshot}
+        resizeMode="cover"
+      />
+
+      {/* Profile icon image */}
+      <Image
+        source={require('../../assets/images/react-logo.png')} // update with your profile icon asset
+        style={styles.profileIcon}
+        resizeMode="cover"
+      />
+
+      {/* Search bar */}
+      <View style={styles.searchBar}>
+        <Text style={styles.searchText}>search categories</Text>
+      </View>
+
+      {/* Category Card Example: A Black Card with "parties" */}
+      <View style={styles.categoryCard}>
+        <Text style={styles.categoryText}>parties</Text>
+      </View>
+
+      {/* Floating Action Button for "asks" */}
+      <View style={styles.fabLeft}>
+        <Text style={styles.fabText}>asks</Text>
+      </View>
+
+      {/* Floating Action Button for "selling" */}
+      <View style={styles.fabRight}>
+        <Text style={styles.fabText}>selling</Text>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    position: 'relative',
+    width: 393,
+    height: 852,
+    backgroundColor: '#777777',
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
+  topRectangle: {
     position: 'absolute',
+    width: 393,
+    height: 95,
+    left: 0,
+    top: 0,
+    backgroundColor: '#777777',
+  },
+  screenshot: {
+    position: 'absolute',
+    width: 135,
+    height: 60,
+    left: 130,
+    top: 32,
+    borderRadius: 10,
+  },
+  profileIcon: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    left: 313,
+    top: 32,
+    borderRadius: 30,
+  },
+  searchBar: {
+    position: 'absolute',
+    left: 80,
+    top: 127,
+    width: 239,
+    height: 40,
+    backgroundColor: '#1E1E1E',
+    borderWidth: 1,
+    borderColor: '#444444',
+    borderRadius: 9999, // creates a pill shape
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  searchText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  categoryCard: {
+    position: 'absolute',
+    left: 21,
+    top: 181,
+    width: 351,
+    height: 124,
+    backgroundColor: '#000000',
+    borderRadius: 16,
+    justifyContent: 'center',
+    paddingLeft: 20,
+  },
+  categoryText: {
+    fontFamily: 'League Spartan', // ensure this font is loaded or replace with a default font
+    fontSize: 30,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  fabLeft: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    left: 22,
+    top: 769,
+    backgroundColor: '#000000',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    // Shadow for iOS and elevation for Android
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 8,
+  },
+  fabRight: {
+    position: 'absolute',
+    width: 60,
+    height: 60,
+    left: 311,
+    top: 770,
+    backgroundColor: '#000000',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 8,
+  },
+  fabText: {
+    fontFamily: 'League Spartan',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#C1FF72',
   },
 });
+

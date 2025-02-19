@@ -1,153 +1,207 @@
-// app/index.tsx
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
 
-export default function HomePage() {
+// Example category data
+const categories = [
+  {
+    name: 'parties',
+    image: require('../../assets/images/parties1.png'),
+  },
+  {
+    name: 'phones',
+    image: require('../../assets/images/phones.png'),
+  },
+  {
+    name: 'mens clothing',
+    image: require('../../assets/images/mensclothing.png'),
+  },
+  {
+    name: 'concerts',
+    image: require('../../assets/images/concert.png'),
+  },
+];
+
+export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      {/* Top rectangle (header background) */}
-      <View style={styles.topRectangle} />
+      {/* Top Section */}
+      <View style={styles.headerContainer}>
+        {/* Logo */}
+        <Image
+          source={require('../../assets/images/logo.png')} // Replace with your "sellup" logo
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-      {/* Header screenshot image */}
-      <Image
-        source={require('../../assets/images/logo.png')} // update the asset path accordingly
-        style={styles.screenshot}
-        resizeMode="cover"
-      />
+        {/* Profile Icon */}
+        <Image
+          source={require('../../assets/images/profileicon.png')}
+          style={styles.profileIcon}
+          resizeMode="cover"
+        />
+      </View>
 
-      {/* Profile icon image */}
-      <Image
-        source={require('../../assets/images/react-logo.png')} // update with your profile icon asset
-        style={styles.profileIcon}
-        resizeMode="cover"
-      />
-
-      {/* Search bar */}
+      {/* Search Bar */}
       <View style={styles.searchBar}>
         <Text style={styles.searchText}>search categories</Text>
       </View>
 
-      {/* Category Card Example: A Black Card with "parties" */}
-      <View style={styles.categoryCard}>
-        <Text style={styles.categoryText}>parties</Text>
-      </View>
+      {/* Scrollable Category Cards */}
+      <ScrollView
+        style={styles.scrollArea}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {categories.map((cat, index) => (
+          <View style={styles.categoryCard} key={index}>
+            {/* Left side (black box with text) */}
+            <View style={styles.categoryTextContainer}>
+              <Text style={styles.categoryTitle}>{cat.name}</Text>
+            </View>
 
-      {/* Floating Action Button for "asks" */}
-      <View style={styles.fabLeft}>
+            {/* Right side (image) */}
+            <Image source={cat.image} style={styles.categoryImage} />
+          </View>
+        ))}
+      </ScrollView>
+
+      {/* Bottom Buttons (FAB-like) */}
+      <TouchableOpacity style={[styles.fab, styles.fabLeft]}>
         <Text style={styles.fabText}>asks</Text>
-      </View>
+      </TouchableOpacity>
 
-      {/* Floating Action Button for "selling" */}
-      <View style={styles.fabRight}>
+      <TouchableOpacity style={[styles.fab, styles.fabRight]}>
         <Text style={styles.fabText}>selling</Text>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
 
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
-    width: 393,
-    height: 852,
-    backgroundColor: '#777777',
+    flex: 1,
+    backgroundColor: '#777777', // Overall gray background
   },
-  topRectangle: {
-    position: 'absolute',
-    width: 393,
-    height: 95,
-    left: 0,
-    top: 0,
-    backgroundColor: '#777777',
+  /* ----------------
+   *  TOP HEADER
+   * ---------------- */
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 40,
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
   },
-  screenshot: {
-    position: 'absolute',
-    width: 135,
-    height: 60,
-    left: 130,
-    top: 32,
-    borderRadius: 10,
+  logo: {
+    width: 120,
+    height: 50,
   },
   profileIcon: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    left: 313,
-    top: 32,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#ccc',
   },
+  /* ----------------
+   *  SEARCH BAR
+   * ---------------- */
   searchBar: {
-    position: 'absolute',
-    left: 80,
-    top: 127,
-    width: 239,
+    backgroundColor: '#000000',
+    marginHorizontal: 16,
+    marginTop: 10,
+    borderRadius: 16,
     height: 40,
-    backgroundColor: '#1E1E1E',
-    borderWidth: 1,
-    borderColor: '#444444',
-    borderRadius: 9999, // creates a pill shape
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingLeft: 16,
   },
   searchText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
+  /* ----------------
+   *  SCROLL AREA
+   * ---------------- */
+  scrollArea: {
+    flex: 1,
+    marginTop: 10,
+  },
+  scrollContent: {
+    paddingBottom: 100, // extra space so FABs don't cover the last card
+  },
+  /* ----------------
+   *  CATEGORY CARDS
+   * ---------------- */
   categoryCard: {
+    flexDirection: 'row',
+    backgroundColor: '#000000',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    // Shadow (iOS) & elevation (Android)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  categoryTextContainer: {
+    width: SCREEN_WIDTH * 0.4, // 40% of screen width
+    padding: 16,
+    justifyContent: 'center',
+  },
+  categoryTitle: {
+    // Replace with your custom font if desired
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textTransform: 'capitalize',
+  },
+  categoryImage: {
+    width: SCREEN_WIDTH * 0.6, // 60% of screen width
+    height: 120, // or adjust as needed
+    resizeMode: 'cover',
+  },
+  /* ----------------
+   *  BOTTOM FABs
+   * ---------------- */
+  fab: {
     position: 'absolute',
-    left: 21,
-    top: 181,
-    width: 351,
-    height: 124,
+    width: 70,
+    height: 70,
     backgroundColor: '#000000',
     borderRadius: 16,
     justifyContent: 'center',
-    paddingLeft: 20,
-  },
-  categoryText: {
-    fontFamily: 'League Spartan', // ensure this font is loaded or replace with a default font
-    fontSize: 30,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    alignItems: 'center',
+    bottom: 20,
+    // Shadow / elevation
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
   },
   fabLeft: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    left: 22,
-    top: 769,
-    backgroundColor: '#000000',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    // Shadow for iOS and elevation for Android
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 8,
+    left: 20,
   },
   fabRight: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    left: 311,
-    top: 770,
-    backgroundColor: '#000000',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 8,
+    right: 20,
   },
   fabText: {
-    fontFamily: 'League Spartan',
+    color: '#C1FF72',
     fontSize: 14,
     fontWeight: '700',
-    color: '#C1FF72',
+    textTransform: 'uppercase',
   },
 });
-

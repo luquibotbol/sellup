@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Calendar, MapPin, Tag } from 'lucide-react-native';
+import { Calendar, MapPin, Tag, CheckCircle, XCircle, Clock } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { Event } from '@/store/eventStore';
 
@@ -27,6 +27,36 @@ export default function EventCard({ event }: EventCardProps) {
     });
   };
   
+  const getStatusIcon = () => {
+    if (!event.status || event.status === 'active') return null;
+    
+    switch (event.status) {
+      case 'completed':
+        return <CheckCircle size={16} color={Colors.success} />;
+      case 'cancelled':
+        return <XCircle size={16} color={Colors.error} />;
+      case 'pending':
+        return <Clock size={16} color={Colors.accent} />;
+      default:
+        return null;
+    }
+  };
+  
+  const getStatusText = () => {
+    if (!event.status || event.status === 'active') return null;
+    
+    return (
+      <Text style={[
+        styles.statusText,
+        event.status === 'completed' ? styles.completedText : 
+        event.status === 'cancelled' ? styles.cancelledText : 
+        styles.pendingText
+      ]}>
+        {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+      </Text>
+    );
+  };
+  
   return (
     <Pressable 
       style={({ pressed }) => [
@@ -45,6 +75,13 @@ export default function EventCard({ event }: EventCardProps) {
         <View style={styles.typeTag}>
           <Text style={styles.typeText}>{event.type.toUpperCase()}</Text>
         </View>
+        
+        {event.status && event.status !== 'active' && (
+          <View style={styles.statusContainer}>
+            {getStatusIcon()}
+            {getStatusText()}
+          </View>
+        )}
         
         <Text style={styles.name}>{event.name}</Text>
         
@@ -102,6 +139,25 @@ const styles = StyleSheet.create({
     color: Colors.background,
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  statusText: {
+    marginLeft: 4,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  completedText: {
+    color: Colors.success,
+  },
+  cancelledText: {
+    color: Colors.error,
+  },
+  pendingText: {
+    color: Colors.accent,
   },
   name: {
     color: Colors.text,

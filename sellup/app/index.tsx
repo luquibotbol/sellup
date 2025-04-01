@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { Redirect } from 'expo-router';
 import { Apple, Mail } from 'lucide-react-native';
 import { useAuthStore } from '@/store/authStore';
 import Colors from '@/constants/colors';
@@ -9,30 +9,17 @@ import Button from '@/components/Button';
 import SocialButton from '@/components/SocialButton';
 
 export default function SignInScreen() {
-  const router = useRouter();
   const { signIn, signInWithProvider, isAuthenticated, isLoading, error, clearError } = useAuthStore();
   
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('alex@example.com'); // Pre-filled for demo
+  const [password, setPassword] = useState('password123'); // Pre-filled for demo
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [isReady, setIsReady] = useState(false);
   
-  // Set isReady after a short delay to ensure Root Layout is mounted
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsReady(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // Only navigate after component is ready
-  useEffect(() => {
-    if (isAuthenticated && isReady) {
-      router.replace('/categories');
-    }
-  }, [isAuthenticated, router, isReady]);
+  // If user is already authenticated, redirect to categories
+  if (isAuthenticated) {
+    return <Redirect href="/categories" />;
+  }
   
   const validateForm = () => {
     let isValid = true;
@@ -64,13 +51,29 @@ export default function SignInScreen() {
     clearError();
     
     if (validateForm()) {
-      await signIn(email, password);
+      try {
+        await signIn(email, password);
+      } catch (error: any) {
+        if (Platform.OS === 'web') {
+          alert(error.message || 'Sign in failed');
+        } else {
+          Alert.alert('Error', error.message || 'Sign in failed');
+        }
+      }
     }
   };
   
   const handleSocialSignIn = async (provider: 'google' | 'apple') => {
     clearError();
-    await signInWithProvider(provider);
+    try {
+      await signInWithProvider(provider);
+    } catch (error: any) {
+      if (Platform.OS === 'web') {
+        alert(error.message || `Failed to sign in with ${provider}`);
+      } else {
+        Alert.alert('Error', error.message || `Failed to sign in with ${provider}`);
+      }
+    }
   };
   
   return (
@@ -136,6 +139,10 @@ export default function SignInScreen() {
             icon={<Mail size={20} color={Colors.text} />}
             onPress={() => handleSocialSignIn('google')}
           />
+          
+          <Text style={styles.demoText}>
+            Demo credentials: alex@example.com / password123
+          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -200,5 +207,11 @@ const styles = StyleSheet.create({
   dividerText: {
     color: Colors.textSecondary,
     paddingHorizontal: 16,
+  },
+  demoText: {
+    color: Colors.textSecondary,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 24,
   },
 });

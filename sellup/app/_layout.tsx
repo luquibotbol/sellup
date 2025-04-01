@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Stack } from 'expo-router';
 import { Platform, StatusBar } from 'react-native';
 import { ErrorBoundary } from './error-boundary';
 import Colors from '@/constants/colors';
-import { initializeFirebase } from '@/firebase';
+import { useAuthStore } from '@/store/authStore';
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -11,9 +11,12 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
-  // Initialize Firebase when the app starts
-  useEffect(() => {
-    initializeFirebase();
+  // Load auth state on app start
+  const { loadUser } = useAuthStore();
+  
+  // Load user data on app start, but don't block rendering
+  React.useEffect(() => {
+    loadUser();
   }, []);
 
   return (
@@ -110,6 +113,62 @@ export default function RootLayout() {
           options={{
             title: 'Profile',
             headerBackTitle: 'Back',
+          }}
+        />
+        <Stack.Screen
+          name="personal-info"
+          options={{
+            title: 'Personal Information',
+            headerBackTitle: 'Profile',
+          }}
+        />
+        <Stack.Screen
+          name="payment-methods"
+          options={{
+            title: 'Payment Methods',
+            headerBackTitle: 'Profile',
+          }}
+        />
+        <Stack.Screen
+          name="add-payment-method"
+          options={{
+            title: 'Add Payment Method',
+            headerBackTitle: 'Payment Methods',
+          }}
+        />
+        <Stack.Screen
+          name="my-buy-listings"
+          options={{
+            title: 'My Buy Listings',
+            headerBackTitle: 'Profile',
+          }}
+        />
+        <Stack.Screen
+          name="my-sell-listings"
+          options={{
+            title: 'My Sell Listings',
+            headerBackTitle: 'Profile',
+          }}
+        />
+        <Stack.Screen
+          name="manage-listings"
+          options={{
+            title: 'Manage Listings',
+            headerBackTitle: 'Profile',
+          }}
+        />
+        <Stack.Screen
+          name="history"
+          options={{
+            title: 'Transaction History',
+            headerBackTitle: 'Profile',
+          }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            headerBackTitle: 'Profile',
           }}
         />
       </Stack>

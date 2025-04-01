@@ -1,5 +1,7 @@
 import { create } from 'zustand';
-import { firestoreEventService } from '@/firebase';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import mockApi from '@/services/mockApi';
 
 export interface Seller {
   id: string;
@@ -19,129 +21,126 @@ export interface Event {
   additionalInfo?: string;
   seller: Seller;
   type: 'buy' | 'sell';
+  status?: 'active' | 'completed' | 'cancelled' | 'pending';
 }
 
 interface EventState {
   events: Event[];
   isLoading: boolean;
   error: string | null;
-  fetchEvents: (options?: {
-    category?: string;
-    type?: 'buy' | 'sell';
-    page?: number;
-    pageSize?: number;
-  }) => Promise<void>;
+  fetchEvents: () => Promise<void>;
+  fetchEventsByCategory: (category: string) => Promise<void>;
   addEvent: (event: Omit<Event, 'id'>) => Promise<void>;
-  getEventsByCategory: (category: string) => Promise<Event[]>;
-  getEventById: (id: string) => Promise<Event | undefined>;
-  updateEvent: (id: string, eventData: Partial<Event>) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
-  fetchMyEvents: () => Promise<void>;
-  clearError: () => void;
+  updateEventStatus: (id: string, status: 'active' | 'completed' | 'cancelled' | 'pending') => Promise<void>;
+  getEventsByCategory: (category: string) => Event[];
+  getEventById: (id: string) => Event | undefined;
+  getUserEvents: (userId: string) => Event[];
 }
 
-export const useEventStore = create<EventState>((set, get) => ({
-  events: [],
-  isLoading: false,
-  error: null,
-  
-  fetchEvents: async (options = {}) => {
-    set({ isLoading: true, error: null });
-    try {
-      const events = await firestoreEventService.getEvents(options);
-      set({ events, isLoading: false });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch events';
-      set({ error: errorMessage, isLoading: false });
-    }
-  },
-  
-  addEvent: async (eventData) => {
-    set({ isLoading: true, error: null });
-    try {
-      const newEvent = await firestoreEventService.createEvent(eventData);
-      set((state) => ({
-        events: [...state.events, newEvent],
-        isLoading: false,
-      }));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create event';
-      set({ error: errorMessage, isLoading: false });
-    }
-  },
-  
-  getEventsByCategory: async (category) => {
-    set({ isLoading: true, error: null });
-    try {
-      const events = await firestoreEventService.getEventsByCategory(category);
-      set({ isLoading: false });
-      return events;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch events by category';
-      set({ error: errorMessage, isLoading: false });
-      return [];
-    }
-  },
-  
-  getEventById: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      const event = await firestoreEventService.getEventById(id);
-      set({ isLoading: false });
-      return event;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch event';
-      set({ error: errorMessage, isLoading: false });
-      return undefined;
-    }
-  },
-  
-  updateEvent: async (id, eventData) => {
-    set({ isLoading: true, error: null });
-    try {
-      const updatedEvent = await firestoreEventService.updateEvent(id, eventData);
+export const useEventStore = create<EventState>()(
+  persist(
+    (set, get) => ({
+      events: [],
+      isLoading: false,
+      error: null,
       
-      // Update the event in the local state
-      set((state) => ({
-        events: state.events.map((event) => 
-          event.id === id ? updatedEvent : event
-        ),
-        isLoading: false,
-      }));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to update event';
-      set({ error: errorMessage, isLoading: false });
-    }
-  },
-  
-  deleteEvent: async (id) => {
-    set({ isLoading: true, error: null });
-    try {
-      await firestoreEventService.deleteEvent(id);
+      fetchEvents: async () => {
+        set({ isLoading: true, error: null });
+        try {
+          const events = await mockApi.events.getAll();
+          set({ events, isLoading: false });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Failed to fetch events', 
+            isLoading: false 
+          });
+        }
+      },
       
-      // Remove the event from the local state
-      set((state) => ({
-        events: state.events.filter((event) => event.id !== id),
-        isLoading: false,
-      }));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete event';
-      set({ error: errorMessage, isLoading: false });
+      fetchEventsByCategory: async (category) => {
+        set({ isLoading: true, error: null });
+        try {
+          const events = await mockApi.events.getByCategory(category);
+          // Merge with existing events, replacing any with the same ID
+          const existingEvents = get().events.filter(
+            e => e.category !== category
+          );
+          set({ 
+            events: [...existingEvents, ...events], 
+            isLoading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || `Failed to fetch ${category} events`, 
+            isLoading: false 
+          });
+        }
+      },
+      
+      addEvent: async (eventData) => {
+        set({ isLoading: true, error: null });
+        try {
+          // Set default status to active
+          const eventWithStatus = {
+            ...eventData,
+            status: 'active' as const
+          };
+          
+          const newEvent = await mockApi.events.create(eventWithStatus);
+          set((state) => ({
+            events: [...state.events, newEvent],
+            isLoading: false
+          }));
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Failed to create event', 
+            isLoading: false 
+          });
+          throw error; // Re-throw to handle in the UI
+        }
+      },
+      
+      updateEventStatus: async (id, status) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedEvent = await mockApi.events.update(id, { status });
+          
+          set((state) => ({
+            events: state.events.map(event => 
+              event.id === id ? { ...event, status } : event
+            ),
+            isLoading: false
+          }));
+          
+          return updatedEvent;
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Failed to update event status', 
+            isLoading: false 
+          });
+          throw error;
+        }
+      },
+      
+      getEventsByCategory: (category) => {
+        return get().events.filter(event => event.category === category);
+      },
+      
+      getEventById: (id) => {
+        return get().events.find(event => event.id === id);
+      },
+      
+      getUserEvents: (userId) => {
+        return get().events.filter(event => event.seller.id === userId);
+      },
+    }),
+    {
+      name: 'events-storage',
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        // Only persist the events array
+        events: state.events
+      }),
     }
-  },
-  
-  fetchMyEvents: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const events = await firestoreEventService.getMyEvents();
-      set({ events, isLoading: false });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch your events';
-      set({ error: errorMessage, isLoading: false });
-    }
-  },
-  
-  clearError: () => {
-    set({ error: null });
-  },
-}));
+  )
+);

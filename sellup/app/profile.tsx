@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, Alert, Platform, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LogOut, User, Settings, Heart, ShoppingBag, Clock } from 'lucide-react-native';
+import { LogOut, User, Settings, Heart, ShoppingBag, Clock, CreditCard, List, Tag } from 'lucide-react-native';
 import { useAuthStore } from '@/store/authStore';
 import Colors from '@/constants/colors';
 import NavBar from '@/components/NavBar';
@@ -38,6 +38,10 @@ export default function ProfileScreen() {
     }
   };
   
+  const navigateTo = (route: string) => {
+    router.push(route);
+  };
+  
   return (
     <SafeAreaView style={styles.container}>
       <NavBar />
@@ -57,39 +61,80 @@ export default function ProfileScreen() {
           
           <Text style={styles.userName}>{user?.name || 'User'}</Text>
           <Text style={styles.userEmail}>{user?.email || 'user@example.com'}</Text>
+          
+          <Button
+            title="Edit Profile"
+            onPress={() => navigateTo('/personal-info')}
+            variant="outline"
+            style={styles.editProfileButton}
+          />
         </View>
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           
-          <View style={styles.menuItem}>
+          <Pressable 
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={() => navigateTo('/personal-info')}
+          >
             <User size={20} color={Colors.accent} />
             <Text style={styles.menuItemText}>Personal Information</Text>
-          </View>
+          </Pressable>
           
-          <View style={styles.menuItem}>
+          <Pressable 
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={() => navigateTo('/payment-methods')}
+          >
+            <CreditCard size={20} color={Colors.accent} />
+            <Text style={styles.menuItemText}>Payment Methods</Text>
+          </Pressable>
+          
+          <Pressable 
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={() => navigateTo('/settings')}
+          >
             <Settings size={20} color={Colors.accent} />
             <Text style={styles.menuItemText}>Settings</Text>
-          </View>
+          </Pressable>
         </View>
         
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>My Listings</Text>
           
-          <View style={styles.menuItem}>
+          <Pressable 
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={() => navigateTo('/manage-listings')}
+          >
+            <List size={20} color={Colors.accent} />
+            <Text style={styles.menuItemText}>Manage All Listings</Text>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>New</Text>
+            </View>
+          </Pressable>
+          
+          <Pressable 
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={() => navigateTo('/my-buy-listings')}
+          >
             <ShoppingBag size={20} color={Colors.accent} />
             <Text style={styles.menuItemText}>My Buy Listings</Text>
-          </View>
+          </Pressable>
           
-          <View style={styles.menuItem}>
-            <Heart size={20} color={Colors.accent} />
+          <Pressable 
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={() => navigateTo('/my-sell-listings')}
+          >
+            <Tag size={20} color={Colors.accent} />
             <Text style={styles.menuItemText}>My Sell Listings</Text>
-          </View>
+          </Pressable>
           
-          <View style={styles.menuItem}>
+          <Pressable 
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={() => navigateTo('/history')}
+          >
             <Clock size={20} color={Colors.accent} />
-            <Text style={styles.menuItemText}>History</Text>
-          </View>
+            <Text style={styles.menuItemText}>Transaction History</Text>
+          </Pressable>
         </View>
         
         <Button
@@ -139,6 +184,10 @@ const styles = StyleSheet.create({
   userEmail: {
     color: Colors.textSecondary,
     fontSize: 16,
+    marginBottom: 16,
+  },
+  editProfileButton: {
+    width: 150,
   },
   section: {
     marginBottom: 24,
@@ -156,12 +205,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  menuItemPressed: {
+    opacity: 0.7,
+    backgroundColor: Colors.card,
+  },
   menuItemText: {
     color: Colors.text,
     fontSize: 16,
     marginLeft: 12,
+    flex: 1,
+  },
+  badge: {
+    backgroundColor: Colors.accent,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  badgeText: {
+    color: Colors.background,
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   signOutButton: {
     marginTop: 24,
+    marginBottom: 32,
   },
 });

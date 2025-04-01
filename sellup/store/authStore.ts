@@ -1,15 +1,24 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { firebaseAuthService } from '@/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/firebase';
+import mockApi from '@/services/mockApi';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   profileImage?: string;
+  phone?: string;
+  address?: string;
+  paymentMethods?: PaymentMethod[];
+}
+
+export interface PaymentMethod {
+  id: string;
+  type: 'card' | 'paypal' | 'venmo' | 'cashapp';
+  name: string;
+  isDefault: boolean;
+  details: string;
 }
 
 interface AuthState {
@@ -21,7 +30,11 @@ interface AuthState {
   signInWithProvider: (provider: 'google' | 'apple') => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
-  updateUserProfile: (userData: { displayName?: string, photoURL?: string }) => Promise<void>;
+  loadUser: () => Promise<void>;
+  updateUserProfile: (userData: Partial<User>) => Promise<void>;
+  addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => Promise<void>;
+  removePaymentMethod: (id: string) => Promise<void>;
+  setDefaultPaymentMethod: (id: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -32,41 +45,63 @@ export const useAuthStore = create<AuthState>()(
       isLoading: false,
       error: null,
       
+      loadUser: async () => {
+        try {
+          set({ isLoading: true });
+          const user = await mockApi.auth.getProfile();
+          if (user) {
+            set({ user, isAuthenticated: true });
+          }
+        } catch (error) {
+          // Token might be invalid or expired
+          await mockApi.auth.signOut();
+          set({ user: null, isAuthenticated: false });
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+      
       signIn: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          const user = await firebaseAuthService.login(email, password);
-          set({ user, isAuthenticated: true, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to sign in';
-          set({ error: errorMessage, isLoading: false });
+          const response = await mockApi.auth.signIn(email, password);
+          set({ 
+            user: response.user, 
+            isAuthenticated: true, 
+            isLoading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Invalid email or password', 
+            isLoading: false 
+          });
+          throw error;
         }
       },
       
       signInWithProvider: async (provider) => {
         set({ isLoading: true, error: null });
         try {
-          // In a real app, you would use expo-auth-session or similar to get the token
-          // This is a placeholder for the concept
-          const token = 'mock-provider-token';
-          
-          const user = await firebaseAuthService.signInWithProvider(provider, token);
-          set({ user, isAuthenticated: true, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : `Failed to sign in with ${provider}`;
-          set({ error: errorMessage, isLoading: false });
+          const response = await mockApi.auth.signInWithProvider(provider);
+          set({ 
+            user: response.user, 
+            isAuthenticated: true, 
+            isLoading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || `Failed to sign in with ${provider}`, 
+            isLoading: false 
+          });
+          throw error;
         }
       },
       
       signOut: async () => {
-        set({ isLoading: true });
         try {
-          await firebaseAuthService.signOut();
-          set({ user: null, isAuthenticated: false, isLoading: false });
-        } catch (error) {
-          console.error('Error during sign out:', error);
-          // Still consider the user logged out even if the API call fails
-          set({ user: null, isAuthenticated: false, isLoading: false });
+          await mockApi.auth.signOut();
+        } finally {
+          set({ user: null, isAuthenticated: false });
         }
       },
       
@@ -77,40 +112,79 @@ export const useAuthStore = create<AuthState>()(
       updateUserProfile: async (userData) => {
         set({ isLoading: true, error: null });
         try {
-          const updatedUser = await firebaseAuthService.updateUserProfile(userData);
-          set({ user: updatedUser, isLoading: false });
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
-          set({ error: errorMessage, isLoading: false });
+          const updatedUser = await mockApi.auth.updateProfile(userData);
+          set({ 
+            user: updatedUser, 
+            isLoading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Failed to update profile', 
+            isLoading: false 
+          });
+          throw error;
+        }
+      },
+      
+      addPaymentMethod: async (method) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedUser = await mockApi.auth.addPaymentMethod(method);
+          set({ 
+            user: updatedUser, 
+            isLoading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Failed to add payment method', 
+            isLoading: false 
+          });
+          throw error;
+        }
+      },
+      
+      removePaymentMethod: async (id) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedUser = await mockApi.auth.removePaymentMethod(id);
+          set({ 
+            user: updatedUser, 
+            isLoading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Failed to remove payment method', 
+            isLoading: false 
+          });
+          throw error;
+        }
+      },
+      
+      setDefaultPaymentMethod: async (id) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedUser = await mockApi.auth.setDefaultPaymentMethod(id);
+          set({ 
+            user: updatedUser, 
+            isLoading: false 
+          });
+        } catch (error: any) {
+          set({ 
+            error: error.message || 'Failed to set default payment method', 
+            isLoading: false 
+          });
+          throw error;
         }
       },
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({ 
+        // Only persist these fields
+        user: state.user,
+        isAuthenticated: state.isAuthenticated 
+      }),
     }
   )
 );
-
-// Set up auth state listener
-if (auth) {
-  onAuthStateChanged(auth, (firebaseUser) => {
-    if (firebaseUser) {
-      const user = {
-        id: firebaseUser.uid,
-        name: firebaseUser.displayName || '',
-        email: firebaseUser.email || '',
-        profileImage: firebaseUser.photoURL || undefined,
-      };
-      
-      // Only update if the user is not already set or if the user info has changed
-      const currentState = useAuthStore.getState();
-      if (!currentState.user || currentState.user.id !== user.id) {
-        useAuthStore.setState({ user, isAuthenticated: true });
-      }
-    } else {
-      // User is signed out
-      useAuthStore.setState({ user: null, isAuthenticated: false });
-    }
-  });
-}

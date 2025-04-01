@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, SafeAreaView, Switch, Text, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
+import { View, StyleSheet, ScrollView, SafeAreaView, Switch, Text, KeyboardAvoidingView, Platform, Pressable, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuthStore } from '@/store/authStore';
 import { useEventStore } from '@/store/eventStore';
@@ -13,12 +13,12 @@ export default function CreateEventScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ type?: 'buy' | 'sell' }>();
   const { user } = useAuthStore();
-  const { addEvent } = useEventStore();
+  const { addEvent, isLoading, error } = useEventStore();
   
-  const [isLoading, setIsLoading] = useState(false);
   const [type, setType] = useState<'buy' | 'sell'>(params.type || 'sell');
   const [name, setName] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState('2023-07-15'); // Pre-filled for demo, YYYY-MM-DD format
+  const [time, setTime] = useState('20:00'); // Pre-filled for demo, HH:MM format
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('Parties');
@@ -29,6 +29,7 @@ export default function CreateEventScreen() {
   const [errors, setErrors] = useState({
     name: '',
     date: '',
+    time: '',
     location: '',
     description: '',
     price: '',
@@ -44,6 +45,7 @@ export default function CreateEventScreen() {
     const newErrors = {
       name: '',
       date: '',
+      time: '',
       location: '',
       description: '',
       price: '',
@@ -59,8 +61,14 @@ export default function CreateEventScreen() {
     if (!date.trim()) {
       newErrors.date = 'Date is required';
       isValid = false;
-    } else if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(date)) {
-      newErrors.date = 'Date format should be YYYY-MM-DDTHH:MM:SS';
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      newErrors.date = 'Date format should be YYYY-MM-DD';
+      isValid = false;
+    }
+    
+    // Time is optional, but if provided, validate format
+    if (time && !/^\d{2}:\d{2}$/.test(time)) {
+      newErrors.time = 'Time format should be HH:MM';
       isValid = false;
     }
     
@@ -86,19 +94,20 @@ export default function CreateEventScreen() {
     return isValid;
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validateForm()) {
       return;
     }
     
-    setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      addEvent({
+    try {
+      // Combine date and time for the API
+      // If time is not provided, use 00:00 as default
+      const dateTimeString = `${date}T${time || '00:00'}:00`;
+      
+      await addEvent({
         name,
         category,
-        date,
+        date: dateTimeString,
         location,
         description,
         price: parseFloat(price),
@@ -107,14 +116,27 @@ export default function CreateEventScreen() {
         seller: {
           id: user?.id || 'unknown',
           name: user?.name || 'Anonymous',
-          contact: '+1234567890', // Mock contact
+          contact: '+1234567890', // In a real app, this would come from the user profile
         },
         type,
       });
       
-      setIsLoading(false);
+      // Show success message
+      if (Platform.OS === 'web') {
+        alert('Listing created successfully!');
+      } else {
+        Alert.alert('Success', 'Your listing has been created successfully!');
+      }
+      
       router.replace('/categories');
-    }, 1000);
+    } catch (error: any) {
+      // Show error message
+      if (Platform.OS === 'web') {
+        alert(`Failed to create listing: ${error.message}`);
+      } else {
+        Alert.alert('Error', `Failed to create listing: ${error.message}`);
+      }
+    }
   };
   
   return (
@@ -127,6 +149,12 @@ export default function CreateEventScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <Text style={styles.title}>Create {type === 'buy' ? 'Buy' : 'Sell'} Listing</Text>
+          
+          {error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
           
           <View style={styles.typeContainer}>
             <Text style={styles.typeLabel}>Listing Type:</Text>
@@ -149,13 +177,28 @@ export default function CreateEventScreen() {
             placeholder="Enter listing name"
             error={errors.name}
           />
-          <InputField
-            label="Date (YYYY-MM-DDTHH:MM:SS)"
-            value={date}
-            onChangeText={setDate}
-            placeholder="e.g., 2023-07-15T20:00:00"
-            error={errors.date}
-          />
+          
+          <View style={styles.row}>
+            <View style={styles.dateField}>
+              <InputField
+                label="Date (YYYY-MM-DD) *"
+                value={date}
+                onChangeText={setDate}
+                placeholder="e.g., 2023-07-15"
+                error={errors.date}
+              />
+            </View>
+            
+            <View style={styles.timeField}>
+              <InputField
+                label="Time (HH:MM) (Optional)"
+                value={time}
+                onChangeText={setTime}
+                placeholder="e.g., 20:00"
+                error={errors.time}
+              />
+            </View>
+          </View>
           
           <InputField
             label="Location"
@@ -250,6 +293,15 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 24,
   },
+  errorContainer: {
+    backgroundColor: 'rgba(255, 96, 96, 0.1)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorText: {
+    color: Colors.error,
+  },
   typeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -305,5 +357,15 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     marginTop: 24,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  dateField: {
+    width: '58%',
+  },
+  timeField: {
+    width: '38%',
   },
 });

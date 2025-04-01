@@ -54,6 +54,7 @@ export const events = [
       contact: "+1234567890",
     },
     type: "sell" as const,
+    status: "active" as const,
   },
   {
     id: "2",
@@ -71,6 +72,7 @@ export const events = [
       contact: "+1987654321",
     },
     type: "sell" as const,
+    status: "active" as const,
   },
   {
     id: "3",
@@ -88,6 +90,7 @@ export const events = [
       contact: "+1122334455",
     },
     type: "buy" as const,
+    status: "pending" as const,
   },
   {
     id: "4",
@@ -100,11 +103,12 @@ export const events = [
     image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1000",
     additionalInfo: "Original box and accessories included.",
     seller: {
-      id: "u4",
-      name: "Jamie Lee",
+      id: "u1",
+      name: "Alex Johnson",
       contact: "+1567891234",
     },
     type: "sell" as const,
+    status: "completed" as const,
   },
   {
     id: "5",
@@ -117,10 +121,11 @@ export const events = [
     image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&w=1000",
     additionalInfo: "Can meet for in-person inspection before purchase.",
     seller: {
-      id: "u5",
-      name: "Taylor Kim",
+      id: "u1",
+      name: "Alex Johnson",
       contact: "+1654987321",
     },
     type: "sell" as const,
+    status: "cancelled" as const,
   },
 ];

@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { firebaseAuthService } from '@/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/firebase';
 
 export interface User {
   id: string;
@@ -16,13 +19,14 @@ interface AuthState {
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithProvider: (provider: 'google' | 'apple') => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   clearError: () => void;
+  updateUserProfile: (userData: { displayName?: string, photoURL?: string }) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -31,49 +35,54 @@ export const useAuthStore = create<AuthState>()(
       signIn: async (email, password) => {
         set({ isLoading: true, error: null });
         try {
-          // Mock authentication
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Mock user data
-          const user = {
-            id: '1',
-            name: 'John Doe',
-            email,
-            profileImage: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200',
-          };
-          
+          const user = await firebaseAuthService.login(email, password);
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
-          set({ error: 'Invalid email or password', isLoading: false });
+          const errorMessage = error instanceof Error ? error.message : 'Failed to sign in';
+          set({ error: errorMessage, isLoading: false });
         }
       },
       
       signInWithProvider: async (provider) => {
         set({ isLoading: true, error: null });
         try {
-          // Mock provider authentication
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // In a real app, you would use expo-auth-session or similar to get the token
+          // This is a placeholder for the concept
+          const token = 'mock-provider-token';
           
-          // Mock user data
-          const user = {
-            id: '1',
-            name: 'John Doe',
-            email: 'john.doe@example.com',
-            profileImage: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200',
-          };
-          
+          const user = await firebaseAuthService.signInWithProvider(provider, token);
           set({ user, isAuthenticated: true, isLoading: false });
         } catch (error) {
-          set({ error: `Failed to sign in with ${provider}`, isLoading: false });
+          const errorMessage = error instanceof Error ? error.message : `Failed to sign in with ${provider}`;
+          set({ error: errorMessage, isLoading: false });
         }
       },
       
-      signOut: () => {
-        set({ user: null, isAuthenticated: false });
+      signOut: async () => {
+        set({ isLoading: true });
+        try {
+          await firebaseAuthService.signOut();
+          set({ user: null, isAuthenticated: false, isLoading: false });
+        } catch (error) {
+          console.error('Error during sign out:', error);
+          // Still consider the user logged out even if the API call fails
+          set({ user: null, isAuthenticated: false, isLoading: false });
+        }
       },
       
       clearError: () => {
         set({ error: null });
+      },
+      
+      updateUserProfile: async (userData) => {
+        set({ isLoading: true, error: null });
+        try {
+          const updatedUser = await firebaseAuthService.updateUserProfile(userData);
+          set({ user: updatedUser, isLoading: false });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+          set({ error: errorMessage, isLoading: false });
+        }
       },
     }),
     {
@@ -82,3 +91,26 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 );
+
+// Set up auth state listener
+if (auth) {
+  onAuthStateChanged(auth, (firebaseUser) => {
+    if (firebaseUser) {
+      const user = {
+        id: firebaseUser.uid,
+        name: firebaseUser.displayName || '',
+        email: firebaseUser.email || '',
+        profileImage: firebaseUser.photoURL || undefined,
+      };
+      
+      // Only update if the user is not already set or if the user info has changed
+      const currentState = useAuthStore.getState();
+      if (!currentState.user || currentState.user.id !== user.id) {
+        useAuthStore.setState({ user, isAuthenticated: true });
+      }
+    } else {
+      // User is signed out
+      useAuthStore.setState({ user: null, isAuthenticated: false });
+    }
+  });
+}

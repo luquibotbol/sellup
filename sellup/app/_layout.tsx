@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { Platform, StatusBar } from 'react-native';
 import { ErrorBoundary } from './error-boundary';
 import Colors from '@/constants/colors';
+import { initializeFirebase } from '@/firebase';
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -10,6 +11,11 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  // Initialize Firebase when the app starts
+  useEffect(() => {
+    initializeFirebase();
+  }, []);
+
   return (
     <ErrorBoundary>
       <StatusBar 
